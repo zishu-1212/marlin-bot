@@ -1,0 +1,82 @@
+body{
+  background-color: black;
+}
+.btn-pink{
+  border:1px solid rgb(232 198 110);
+  color: rgb(232 198 110);
+}
+.btn-pink:hover{
+  border:1px solid rgb(232 198 110);
+  color: rgb(255, 255, 255);
+  background-color: rgb(232 198 110);
+}
+.text-yellow-500{
+  color: rgb(232 198 110);
+}
+
+.box{
+ /* min-height: 60vh !important; */
+ border:1px solid rgb(232 198 110);
+  border-radius: 8px;
+}
+select{
+  background-color: black !important;
+  border: none !important;
+}
+select:focus{
+box-shadow: none !important;
+}
+option:hover{
+background-color: antiquewhite !important;
+}
+.bgcard{
+  background-color: rgb(23, 23, 23);
+  padding: 12px;
+}
+.bgcard2{
+  background-color: rgb(52, 52, 52);
+  padding: 12px;
+  height: 50vh;
+  overflow-y: scroll;
+}
+.bgcard22{
+  background-color: rgb(52, 52, 52);
+  padding: 12px;
+  height: 30vh;
+  overflow-y: scroll;
+}
+.initial-content {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.fade-out {
+  animation: fadeOut 1s ease forwards;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid rgb(232 198 110);
+  border-radius: 4px;
+  box-sizing: border-box;
+  color: white;
+}
