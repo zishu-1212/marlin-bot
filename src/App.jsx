@@ -38,8 +38,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LoginPage />} />
-            {/* <Route path="/user" element={<Hero />} /> */}
-            <Route path="/AdminPanil" element={<Admin />} />
+            <Route path="/user" element={<Hero />} />
+            {/* <Route path="/AdminPanil" element={<Admin />} /> */}
           </Routes>
         </BrowserRouter>
       )}

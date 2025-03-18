@@ -17,8 +17,8 @@ const LoginPage = () => {
     }
 
     try {
-      const response = await fetch('https://marlinnapp-5e0bd806334c.herokuapp.com/admin/login', {
-      // const response = await fetch('https://marlinnapp-5e0bd806334c.herokuapp.com/api/login', {
+      // const response = await fetch('https://marlinnapp-5e0bd806334c.herokuapp.com/admin/login', {
+      const response = await fetch('https://marlinnapp-5e0bd806334c.herokuapp.com/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,8 +32,8 @@ const LoginPage = () => {
         const token = data.data?.token; // Token ko data object ke andar access karein
         if (token) {
           localStorage.setItem('token', token);
-          navigate('/AdminPanil');
-          // navigate('/user');
+          // navigate('/AdminPanil');
+          navigate('/user');
         } else {
           setError('Login successful, but token not received');
         }
