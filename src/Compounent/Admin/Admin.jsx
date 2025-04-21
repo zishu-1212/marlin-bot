@@ -155,6 +155,8 @@ const handleSubmitPair = async () => {
     const response = await axios.post('https://marlinnapp-5e0bd806334c.herokuapp.com/admin/filteredPairs', formData);
     if (response.data.status) {
       setPairs(response.data.data);
+      // console.log("response.data.data",response.data.data);
+      
       toast.success("Filtered pairs retrieved successfully")
     } else {
       toast.error('Failed to fetch pairs: ' + response.data.message);
@@ -322,16 +324,33 @@ const handleSubmitPair = async () => {
       <div className="result mt-5 text-white">
         <h3>Filtered Pairs:</h3>
         {pairs.length > 0 ? (
-          pairs.map((pair, index) => (
-            <div key={index} className="pair-card">
-              <p className="text-yellow-500"><strong>{pair.token0.symbol}</strong> / <strong >{pair.token1.symbol}</strong></p>
-              <p className=""> <strong>Reserve USD:</strong> ${Number(pair.reserveUSD).toFixed(2)}</p>
-              <p className="text-start"><strong>Token Address:</strong> ${pair.id}</p>
-            </div>
-          ))
-        ) : (
-          <p>No pairs found.</p>
-        )}
+              pairs.map((pair, index) => {
+                const WMATIC_ID = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270";
+
+                // اگر WMATIC token0 میں ہے تو token1 کی ID دکھائیں، ورنہ token0 کی ID
+                const correctTokenId =
+                  pair.token0.id === WMATIC_ID ? pair.token1.id : pair.token0.id;
+
+                return (
+                  <div key={index} className="pair-card">
+                    <p className="text-yellow-500">
+                      <strong>{pair.token0.symbol}</strong> /{" "}
+                      <strong>{pair.token1.symbol}</strong>
+                    </p>
+                    <p>
+                      <strong>Reserve USD:</strong> $
+                      {Number(pair.reserveUSD).toFixed(2)}
+                    </p>
+                    <p className="text-start">
+                      <strong>Token Address:</strong> {correctTokenId}
+                    </p>
+                  </div>
+                );
+              })
+            ) : (
+              <p>No pairs found.</p>
+            )}
+
       </div>
       </div>
       <p className="fw-bold fs-5">Filter pair</p>
