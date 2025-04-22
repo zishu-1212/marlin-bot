@@ -556,9 +556,7 @@ function Hero() {
                     )}
                   </p>
                   <div>
-                    {profit !== null && (
-                      <p className="text-success">Profit: {profit} MATIC</p>
-                    )}
+                 
                   </div>
                 </div>
               </div>
@@ -622,11 +620,11 @@ function Hero() {
 
                 <div className="mt-4">{message}</div>
                 <div ref={bottomRef} />
-                {profit && (
+                {/* {profit && (
                   <div className="mt-4 text-yellow-400">
                     Profit: {profit} (approx.)
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           </div>
