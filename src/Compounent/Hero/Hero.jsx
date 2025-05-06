@@ -161,7 +161,7 @@ function Hero() {
       if (!token) throw new Error("Authorization token not found.");
   
       const response = await axios.post(
-        "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot",
+        // "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot",
         {
           amount: 1,
           privatekey: privateKey,
@@ -249,15 +249,19 @@ function Hero() {
       setLoader(false);
     }
   };
-  
-  // Auto-scroll logs
-  const bottomRef = useRef(null);
+  const logEndRef = useRef(null);
   useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    const container = document.getElementById("logContainer");
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
   }, [logLines]);
-  
+  useEffect(() => {
+    // Scroll to the bottom every time logLines update
+    if (logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logLines]);
 
   // Fetch POL Price Data
   const [polPriceData, setPolPriceData] = useState([]);
@@ -530,6 +534,7 @@ function Hero() {
             </div>
           </div>
           <div className="col-12 col-lg-8">
+            
             <div className=" m">
               <div className="card bgcard">
                 <p
@@ -612,21 +617,19 @@ function Hero() {
                 {loader ? <>Processing</> : <>Start Bot</>}
               </button>
             </div>
+           
             <div className=" mt-5">
-              <div className="card bgcard22 text-white">
-                {logLines.map((line, index) => (
-                  <p key={index}>{line}</p>
-                ))}
-
-                <div className="mt-4">{message}</div>
-                <div ref={bottomRef} />
-                {/* {profit && (
-                  <div className="mt-4 text-yellow-400">
-                    Profit: {profit} (approx.)
-                  </div>
-                )} */}
-              </div>
+             <div
+  className="card bgcard22 text-white overflow-y-auto max-h-96"
+  id="logContainer"
+>
+  {logLines.map((line, index) => (
+    <p key={index}>{line}</p>
+  ))}
+  <div className="mt-4">{message}</div>
+</div>
             </div>
+            
           </div>
         </div>
       </div>
