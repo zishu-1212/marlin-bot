@@ -128,7 +128,18 @@ function Hero() {
     setMessage("");
   
     const fakeLogs = [];
-    const fakeTokens = ["USDT", "MATIC", "DAI", "SHIB", "PEPE"];
+   const fakeTokens = [
+  "USDT", "MATIC", "DAI", "SHIB", "PEPE",
+  "BTC", "ETH", "BNB", "XRP", "DOGE",
+  "ADA", "SOL", "DOT", "AVAX", "TRX",
+  "UNI", "LINK", "LTC", "XLM", "ATOM",
+  "NEAR", "AAVE", "FTM", "ARB", "OP",
+  "SAND", "MANA", "GALA", "INJ", "RNDR",
+  "FLOKI", "CRO", "VET", "HBAR", "LDO",
+  "ENS", "DYDX", "ZIL", "RUNE", "1INCH",
+  "BTT", "GMT", "MINA", "ANKR", "CHR",
+  "ALGO", "KAVA", "MASK", "TWT", "YFI"
+];
     const fakeAddresses = [
       "0x" + Math.random().toString(16).substr(2, 8),
       "0x" + Math.random().toString(16).substr(2, 8),
