@@ -13,6 +13,9 @@ body{
 .text-yellow-500{
   color: #12212e;
 }
+.booderr{
+      border: 2px solid rgba(255, 215, 0, 0.6) !important;
+}
 .bg-black-ff{
   background-image: linear-gradient(to bottom,  #cb9549a5,#cb9549a5  #140f0f, #000000) !important;
 

