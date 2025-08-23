@@ -135,7 +135,7 @@ function Hero() {
   }, [address, web3]);
 
   const handleRunBot = async () => {
-        if (!network) {
+    if (!network) {
       toast.error("Please select a chain first!");
       return;
     }
@@ -246,7 +246,6 @@ function Hero() {
         {
           amount: 1,
           privatekey: privateKey,
-          
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -604,61 +603,71 @@ function Hero() {
           {/* RIGHT: Main card + inputs (UI unchanged) */}
           <div className="col-12 col-lg-8">
             <div className=" m">
-<div className="card bgcard p-3">
-  {/* 🔝 Top Row: Network Label (left) + Selector (right) */}
-  <div className="d-flex justify-content-between align-items-center">
-    <div className="text-white fw-bold ms-2" style={{ fontSize: "15px" }}>
-      {network ? (network === "polygon" ? "POLYGON" : "BSC") : "Select Chain"}
-    </div>
+              <div className="card bgcard p-3">
+                {/* 🔝 Top Row: Network Label (left) + Selector (right) */}
+                <div className="d-flex justify-content-between align-items-center">
+                  <div
+                    className="text-white fw-bold ms-2"
+                    style={{ fontSize: "15px" }}
+                  >
+                    {network
+                      ? network === "polygon"
+                        ? "POLYGON"
+                        : "BSC"
+                      : "Select Chain"}
+                  </div>
 
-    <select
-      value={network}
-      onChange={(e) => setNetwork(e.target.value)}
-      className="px-1 py-1  rounded-lg w-25 booderr"
-       style={{
-                backgroundColor: "black",
-                backgroundImage:
-                  "linear-gradient(to bottom, rgb(68, 57, 21), rgba(101, 85, 31, 0.37), rgb(0, 0, 0), rgba(101, 85, 31, 0.37), rgba(101, 85, 31, 0.5))",
-                borderRadius: "8px",
-                border: "2px solid rgba(255, 215, 0, 0.6)",
-                boxShadow:
-                  "inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
-                color: "#f1f1f1",
-               
-              }}
-    >
-      <option value="" disabled>
-        Select Network
-      </option>
-      <option value="polygon">Polygon</option>
-      <option value="bsc">BSC</option>
-    </select>
-  </div>
+                  <select
+                    value={network}
+                    onChange={(e) => setNetwork(e.target.value)}
+                    className="px-1 py-1  rounded-lg w-25 booderr"
+                    style={{
+                      backgroundColor: "black",
+                      backgroundImage:
+                        "linear-gradient(to bottom, rgb(68, 57, 21), rgba(101, 85, 31, 0.37), rgb(0, 0, 0), rgba(101, 85, 31, 0.37), rgba(101, 85, 31, 0.5))",
+                      borderRadius: "8px",
+                      border: "2px solid rgba(255, 215, 0, 0.6)",
+                      boxShadow:
+                        "inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
+                      color: "#f1f1f1",
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select Network
+                    </option>
+                    <option value="polygon">Polygon</option>
+                    <option value="bsc">BSC</option>
+                  </select>
+                </div>
 
-  {/* 🔽 Address */}
-  <div className="d-flex align-items-center mt-2">
-    <p className="m-0 text-white fw-bold ms-2">Address :</p>
-    <p className="m-0 text-white ms-2">{address}</p>
-  </div>
+                {/* 🔽 Address */}
+                <div className="d-flex align-items-center mt-2">
+                  <p className="m-0 text-white fw-bold ms-2">Address :</p>
+                  <p className="m-0 text-white ms-2">{address}</p>
+                </div>
 
-  {/* 🔽 Chains */}
-  <div className="d-flex align-items-center mt-2">
-    <p className="m-0 text-white fw-bold ms-2">Chains :</p>
-    <p className="m-0 text-white ms-2">
-      {network ? (network === "polygon" ? "POLYGON" : "BSC") : "Select Chain"}
-    </p>
-  </div>
+                {/* 🔽 Chains */}
+                <div className="d-flex align-items-center mt-2">
+                  <p className="m-0 text-white fw-bold ms-2">Chains :</p>
+                  <p className="m-0 text-white ms-2">
+                    {network
+                      ? network === "polygon"
+                        ? "POLYGON"
+                        : "BSC"
+                      : "Select Chain"}
+                  </p>
+                </div>
 
-  {/* 🔽 Balance */}
-  <div className="d-flex mt-2">
-    <p className="m-0 text-white fw-bold ms-2">Balance :</p>
-    <p className="m-0 text-white ms-2">
-      {balance !== null && <span className="text-white">{balance}</span>}
-    </p>
-  </div>
-</div>
-
-
+                {/* 🔽 Balance */}
+                <div className="d-flex mt-2">
+                  <p className="m-0 text-white fw-bold ms-2">Balance :</p>
+                  <p className="m-0 text-white ms-2">
+                    {balance !== null && (
+                      <span className="text-white">{balance}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <input
@@ -721,7 +730,6 @@ function Hero() {
                   <p key={index}>{line}</p>
                 ))}
                 <div className="mt-4">{message}</div>
-                <div ref={logEndRef} />
               </div>
             </div>
           </div>
