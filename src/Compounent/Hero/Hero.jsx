@@ -49,13 +49,7 @@ const Custom3DBar = ({ x, y, width, height, index, fill }) => {
   return (
     <g>
       {/* Front face with gradient fill */}
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={`url(#${gradientId})`}
-      />
+      <rect x={x} y={y} width={width} height={height} fill={`url(#${gradientId})`} />
 
       {/* Right face */}
       <polygon
@@ -82,13 +76,24 @@ const Custom3DBar = ({ x, y, width, height, index, fill }) => {
   );
 };
 
+// Helpers for RPC and explorer
+const getRpcUrl = (network) =>
+  network === "polygon"
+    ? "https://polygon-rpc.com"
+    : network === "bsc"
+    ? "https://bsc-dataseed.binance.org"
+    : null;
+
+const getExplorerHost = (network) =>
+  network === "polygon" ? "polygonscan.com" : network === "bsc" ? "bscscan.com" : "";
+
 function Hero() {
   const colors = ["#e8c66e", "rgb(28, 98, 168)"]; // two colors for bars
 
-  // ✅ Network + Web3 (switchable)
-  const [network, setNetwork] = useState(""); // "polygon" | "bsc"
-  const [web3, setWeb3] = useState(new Web3("https://polygon-rpc.com")); // default Polygon
+  // ✅ Network (selectable)
+  const [network, setNetwork] = useState(""); // "", "polygon", "bsc"
 
+  // Wallet + balance
   const [address, setAddress] = useState(null);
   const [balance, setBalance] = useState(null);
   const [previousBalance, setPreviousBalance] = useState(null); // Store previous balance for profit calculation
@@ -97,29 +102,33 @@ function Hero() {
   const [message, setMessage] = useState("");
   const [profit, setProfit] = useState(null); // Store profit
 
+  // Logs
   const [logLines, setLogLines] = useState([]);
-  let fakeInterval = null;
+  const fakeIntervalRef = useRef(null);
+  const confirmIntervalRef = useRef(null);
 
-  // ✅ Switch network handler (UI remains same)
-  const handleSwitchNetwork = () => {
-    if (network === "polygon") {
-      setNetwork("bsc");
-      setWeb3(new Web3("https://bsc-dataseed.binance.org"));
-    } else {
-      setNetwork("polygon");
-      setWeb3(new Web3("https://polygon-rpc.com"));
-    }
+  // Create a fresh web3 instance per action based on current selected network
+  const makeWeb3 = () => {
+    const rpc = getRpcUrl(network);
+    if (!rpc) return null;
+    return new Web3(rpc);
+    // NOTE: If you want to use a wallet provider (e.g. MetaMask), replace with:
+    // return new Web3(window.ethereum);
   };
 
-  // ✅ Fetch balance using current network RPC
+  // Fetch balance using selected network
   const fetchBalance = async () => {
-    if (!address) return;
+    if (!address || !network) return;
     try {
-      const balanceInWei = await web3.eth.getBalance(address);
-      const balanceInEther = web3.utils.fromWei(balanceInWei, "ether");
+      const web3Instance = makeWeb3();
+      if (!web3Instance) return;
+
+      const balanceInWei = await web3Instance.eth.getBalance(address);
+      const balanceInEther = web3Instance.utils.fromWei(balanceInWei, "ether");
+      // Show 4 decimals but store full value separately if you want
       setBalance(parseFloat(balanceInEther).toFixed(4));
 
-      // Save the balance in localStorage and set it as previous balance
+      // Save to localStorage for later diff
       localStorage.setItem("balance", balanceInEther);
       setPreviousBalance(balanceInEther);
     } catch (error) {
@@ -128,12 +137,15 @@ function Hero() {
     }
   };
 
-  // Refetch balance when address or network/web3 changes
+  // Refetch whenever address or network change
   useEffect(() => {
-    if (address) fetchBalance();
+    if (address && network) {
+      fetchBalance();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, web3]);
+  }, [address, network]);
 
+  // Run Bot
   const handleRunBot = async () => {
     if (!network) {
       toast.error("Please select a chain first!");
@@ -148,58 +160,14 @@ function Hero() {
     setLogLines([]);
     setMessage("");
 
+    // Fake real-time logs
     const fakeLogs = [];
     const fakeTokens = [
-      "USDT",
-      "MATIC",
-      "DAI",
-      "SHIB",
-      "PEPE",
-      "BTC",
-      "ETH",
-      "BNB",
-      "XRP",
-      "DOGE",
-      "ADA",
-      "SOL",
-      "DOT",
-      "AVAX",
-      "TRX",
-      "UNI",
-      "LINK",
-      "LTC",
-      "XLM",
-      "ATOM",
-      "NEAR",
-      "AAVE",
-      "FTM",
-      "ARB",
-      "OP",
-      "SAND",
-      "MANA",
-      "GALA",
-      "INJ",
-      "RNDR",
-      "FLOKI",
-      "CRO",
-      "VET",
-      "HBAR",
-      "LDO",
-      "ENS",
-      "DYDX",
-      "ZIL",
-      "RUNE",
-      "1INCH",
-      "BTT",
-      "GMT",
-      "MINA",
-      "ANKR",
-      "CHR",
-      "ALGO",
-      "KAVA",
-      "MASK",
-      "TWT",
-      "YFI",
+      "USDT","MATIC","DAI","SHIB","PEPE","BTC","ETH","BNB","XRP","DOGE",
+      "ADA","SOL","DOT","AVAX","TRX","UNI","LINK","LTC","XLM","ATOM",
+      "NEAR","AAVE","FTM","ARB","OP","SAND","MANA","GALA","INJ","RNDR",
+      "FLOKI","CRO","VET","HBAR","LDO","ENS","DYDX","ZIL","RUNE","1INCH",
+      "BTT","GMT","MINA","ANKR","CHR","ALGO","KAVA","MASK","TWT","YFI",
     ];
     const fakeAddresses = [
       "0x" + Math.random().toString(16).substr(2, 8),
@@ -209,19 +177,17 @@ function Hero() {
 
     for (let i = 0; i < 10; i++) {
       const token = fakeTokens[Math.floor(Math.random() * fakeTokens.length)];
-      const addr =
-        fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
+      const addr = fakeAddresses[Math.floor(Math.random() * fakeAddresses.length)];
       const hash = "0x" + Math.random().toString(16).substr(2, 64);
       fakeLogs.push(`Detected swap on ${token} by ${addr} | Tx: ${hash}`);
     }
 
     let fakeIndex = 0;
-    fakeInterval = setInterval(() => {
+    fakeIntervalRef.current = setInterval(() => {
       setLogLines((prev) => [...prev, fakeLogs[fakeIndex]]);
       fakeIndex = (fakeIndex + 1) % fakeLogs.length;
     }, 300);
 
-    // Run bot and wait 1 minute minimum
     await runBotWithDelay();
   };
 
@@ -231,7 +197,6 @@ function Hero() {
 
     try {
       const token = localStorage.getItem("token");
-      console.log("Token from localStorage:", token);
       if (!token) throw new Error("Authorization token not found.");
 
       // Choose API by network
@@ -240,7 +205,6 @@ function Hero() {
           ? "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot"
           : "https://bnbsniperbot-aa86ddbecda5.herokuapp.com/api/runBot";
 
-      console.log("Running bot API call on:", network);
       const response = await axios.post(
         apiUrl,
         {
@@ -252,19 +216,21 @@ function Hero() {
         }
       );
 
-      console.log("Bot API Response:", response.data);
-
-      const { data, message } = response.data;
+      const { data, message: apiMsg } = response.data;
       const txHash = data?.frontrunTxHash;
-
       if (!txHash) throw new Error("No transaction hash returned.");
 
-      // Use the current web3 for receipt checks (already bound to selected network)
-      const checkConfirmation = setInterval(async () => {
+      // Use a fresh web3 for receipt checks
+      const web3Instance = makeWeb3();
+      if (!web3Instance) throw new Error("Invalid network / RPC.");
+
+      // Start confirmation polling
+      confirmIntervalRef.current = setInterval(async () => {
         try {
-          const receipt = await web3.eth.getTransactionReceipt(txHash);
+          const receipt = await web3Instance.eth.getTransactionReceipt(txHash);
           if (receipt && receipt.status) {
-            clearInterval(checkConfirmation);
+            clearInterval(confirmIntervalRef.current);
+            confirmIntervalRef.current = null;
             console.log("Transaction confirmed!");
           }
         } catch (err) {
@@ -272,23 +238,27 @@ function Hero() {
         }
       }, 5000);
 
+      // Ensure UI stays at least 60s
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(60000 - elapsed, 0);
 
-      setTimeout(() => {
-        clearInterval(fakeInterval);
+      setTimeout(async () => {
+        if (fakeIntervalRef.current) {
+          clearInterval(fakeIntervalRef.current);
+          fakeIntervalRef.current = null;
+        }
         setLogLines([]);
 
-        const explorer = network === "polygon" ? "polygonscan" : "bscscan";
+        const explorer = getExplorerHost(network);
 
         setMessage(
           <>
-            <p className="mt-3 text-green-400">{message}</p>
+            <p className="mt-3 text-green-400">{apiMsg}</p>
             <div className="mt-3 text-green-300">
               <p>
                 Frontrun TxHash:{" "}
                 <a
-                  href={`https://${explorer}.com/tx/${data.frontrunTxHash}`}
+                  href={`https://${explorer}/tx/${data.frontrunTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -298,7 +268,7 @@ function Hero() {
               <p>
                 Target TxHash:{" "}
                 <a
-                  href={`https://${explorer}.com/tx/${data.targetTxHash}`}
+                  href={`https://${explorer}/tx/${data.targetTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -309,7 +279,7 @@ function Hero() {
                 <p>
                   Take Profit TxHash:{" "}
                   <a
-                    href={`https://${explorer}.com/tx/${data.TakeProfitTxHash}`}
+                    href={`https://${explorer}/tx/${data.TakeProfitTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -321,28 +291,37 @@ function Hero() {
           </>
         );
 
-        toast.success(message);
+        toast.success(apiMsg);
 
-        // refresh balance and compute profit
-        fetchBalance();
+        // Profit calc: capture previous before refresh
+        const prev = previousBalance ?? localStorage.getItem("balance");
+        // Refresh balance (this will also update previousBalance to new)
+        await fetchBalance();
         const updatedBalance = localStorage.getItem("balance");
-        if (previousBalance && updatedBalance) {
+
+        if (prev && updatedBalance) {
           const profitValue =
-            parseFloat(updatedBalance) - parseFloat(previousBalance);
+            parseFloat(updatedBalance) - parseFloat(prev);
           if (!Number.isNaN(profitValue)) setProfit(profitValue.toFixed(4));
         }
 
         setLoader(false);
       }, remaining);
     } catch (error) {
-      clearInterval(fakeInterval);
+      if (fakeIntervalRef.current) {
+        clearInterval(fakeIntervalRef.current);
+        fakeIntervalRef.current = null;
+      }
+      if (confirmIntervalRef.current) {
+        clearInterval(confirmIntervalRef.current);
+        confirmIntervalRef.current = null;
+      }
+
       console.error("Error running bot:", error);
 
       if (error.response) {
         console.error("API Error Response:", error.response.data);
-        setMessage(
-          `❌ API Error: ${error.response.data.message || "Unknown error"}`
-        );
+        setMessage(`❌ API Error: ${error.response.data.message || "Unknown error"}`);
       } else {
         setMessage(`❌ Failed to run bot: ${error.message}`);
       }
@@ -351,6 +330,14 @@ function Hero() {
       setLoader(false);
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (fakeIntervalRef.current) clearInterval(fakeIntervalRef.current);
+      if (confirmIntervalRef.current) clearInterval(confirmIntervalRef.current);
+    };
+  }, []);
 
   const logEndRef = useRef(null);
   useEffect(() => {
@@ -367,7 +354,7 @@ function Hero() {
   }, [logLines]);
 
   // Fetch POL Price Data
-  const [polPriceData, setPolPriceData] = useState([]);
+  const [polPriceData, setPolPriceData] = useState([]); // (unused currently but kept)
   const [blockHeightData, setBlockHeightData] = useState([]);
   const [pendingTxData, setPendingTxData] = useState([]);
 
@@ -662,11 +649,17 @@ function Hero() {
                 <div className="d-flex mt-2">
                   <p className="m-0 text-white fw-bold ms-2">Balance :</p>
                   <p className="m-0 text-white ms-2">
-                    {balance !== null && (
-                      <span className="text-white">{balance}</span>
-                    )}
+                    {balance !== null && <span className="text-white">{balance}</span>}
                   </p>
                 </div>
+
+                {/* Optional: show profit after run */}
+                {profit !== null && (
+                  <div className="d-flex mt-2">
+                    <p className="m-0 text-white fw-bold ms-2">Profit :</p>
+                    <p className="m-0 text-success ms-2">{profit}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -729,6 +722,7 @@ function Hero() {
                 {logLines.map((line, index) => (
                   <p key={index}>{line}</p>
                 ))}
+                <div ref={logEndRef} />
                 <div className="mt-4">{message}</div>
               </div>
             </div>

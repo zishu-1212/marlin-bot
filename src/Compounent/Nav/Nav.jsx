@@ -20,7 +20,7 @@ function Nav() {
             <img src={logo} alt="Logo" width={100} className='m-auto' />
           </div>
           <div className='fw-bold' style={{ fontSize: "15px" }}>
-            Welcome to Marlinn Bot Admin Panel
+            Welcome to Marlinn Bot
           </div> 
           <div className='fw-bold' style={{ fontSize: "13px" }}>
             <span style={{ fontSize: "18px" }}>
