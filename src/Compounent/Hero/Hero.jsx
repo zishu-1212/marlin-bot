@@ -722,7 +722,7 @@ function Hero() {
                 {logLines.map((line, index) => (
                   <p key={index}>{line}</p>
                 ))}
-                <div ref={logEndRef} />
+               
                 <div className="mt-4">{message}</div>
               </div>
             </div>
