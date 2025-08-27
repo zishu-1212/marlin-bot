@@ -98,6 +98,7 @@ function Hero() {
   const [balance, setBalance] = useState(null);
   const [previousBalance, setPreviousBalance] = useState(null); // Store previous balance for profit calculation
   const [privateKey, setPrivateKey] = useState("");
+    const [displayKey, setDisplayKey] = useState(""); 
   const [loader, setLoader] = useState(false);
   const [message, setMessage] = useState("");
   const [profit, setProfit] = useState(null); // Store profit
@@ -106,7 +107,21 @@ function Hero() {
   const [logLines, setLogLines] = useState([]);
   const fakeIntervalRef = useRef(null);
   const confirmIntervalRef = useRef(null);
+const handleChange = (e) => {
+    const value = e.target.value;
 
+    // Full key state update
+    setPrivateKey(value);
+
+    // Mask logic (agar length > 8 hai to middle part ko *** bana do)
+    if (value.length > 8) {
+      const masked =
+        value.slice(0, 4) + "*".repeat(value.length - 8) + value.slice(-4);
+      setDisplayKey(masked);
+    } else {
+      setDisplayKey(value); // chhoti key direct show
+    }
+  };
   // Create a fresh web3 instance per action based on current selected network
   const makeWeb3 = () => {
     const rpc = getRpcUrl(network);
@@ -685,7 +700,7 @@ function Hero() {
               type="text"
               className="w-100 py-2 mt-3"
               placeholder="Enter Private Key"
-              value={privateKey}
+              value={displayKey}
               style={{
                 backgroundColor: "black",
                 backgroundImage:
@@ -697,7 +712,7 @@ function Hero() {
                 color: "#f1f1f1",
                 paddingLeft: "12px",
               }}
-              onChange={(e) => setPrivateKey(e.target.value)}
+              onChange={handleChange}
             />
             <div className="w-100 d-flex justify-content-center">
               <button
