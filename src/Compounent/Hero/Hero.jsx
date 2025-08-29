@@ -218,7 +218,7 @@ const handleChange = (e) => {
       const apiUrl =
         network === "polygon"
           ? "https://marlinnapp-5e0bd806334c.herokuapp.com/api/runBot"
-          : "https://bnbsniperbot-aa86ddbecda5.herokuapp.com/api/runBot";
+          : "https://bnbsniperbot-303a52ad1861.herokuapp.com/api/runBot";
 
       const response = await axios.post(
         apiUrl,
